@@ -1,0 +1,19 @@
+{
+  "tanaman": [
+    {
+      "id": 1,
+      "nama": "Pohon Bambu",
+      "jenis": "Perenial"
+    },
+    {
+      "id": 2,
+      "nama": "Mawar",
+      "jenis": "Semusim"
+    },
+    {
+      "id": 3,
+      "nama": "Anggrek",
+      "jenis": "Epifit"
+    }
+  ]
+}

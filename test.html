@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Data Tanaman</title>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.min.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/jquery.form/4.3.0/jquery.form.min.js"></script>
+  <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      // Mendapatkan data tanaman dari server
+      $.getJSON('http://localhost:3000/tanaman', function(data) {
+        var tanaman = data;
+        var table = $('<table>');
+        table.attr('id', 'tanaman-table').addClass('display');
+        table.append('<thead><tr><th>ID</th><th>Nama</th><th>Jenis</th><th>Aksi</th></tr></thead>');
+        table.append('<tbody>');
+        $.each(tanaman, function(index, item) {
+          var row = '<tr data-id="' + item.id + '"><td>' + item.id + '</td><td>' + item.nama + '</td><td>' + item.jenis + '</td>';
+          row += '<td><button class="edit-button" data-id="' + item.id + '">Edit</button>';
+          row += '<button class="delete-button" data-id="' + item.id + '">Delete</button></td></tr>';
+          table.append(row);
+        });
+        table.append('</tbody>');
+        $('#tanaman-table-container').append(table);
+        $('#tanaman-table').DataTable();
+      });
+
+      // Validasi form tambah tanaman menggunakan jQuery Form Validation
+      $('#form-tambah-tanaman').validate({
+        rules: {
+          id: {
+            required: true
+          },
+          nama: {
+            required: true
+          },
+          jenis: {
+            required: true
+          }
+        },
+        messages: {
+          id: {
+            required: "ID tanaman harus diisi"
+          },
+          nama: {
+            required: "Nama tanaman harus diisi"
+          },
+          jenis: {
+            required: "Jenis tanaman harus diisi"
+          }
+        },
+        submitHandler: function(form) {
+          var id = $('#id').val();
+          var nama = $('#nama').val();
+          var jenis = $('#jenis').val();
+
+          // Mengirim data tanaman baru ke server
+          $.ajax({
+            url: 'http://localhost:3000/tanaman',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: id, nama: nama, jenis: jenis }),
+            success: function(data) {
+              // Menambahkan data tanaman baru ke tabel
+              var newRow = '<tr data-id="' + data.id + '"><td>' + data.id + '</td><td>' + data.nama + '</td><td>' + data.jenis + '</td>';
+              newRow += '<td><button class="edit-button" data-id="' + data.id + '">Edit</button>';
+              newRow += '<button class="delete-button" data-id="' + data.id + '">Delete</button></td></tr>';
+              $('#tanaman-table').DataTable().row.add($(newRow)).draw(false);
+              $('#form-tambah-tanaman')[0].reset();
+              $('#tambah-dialog').dialog('close');
+            }
+          });
+        }
+      });
+
+      // Menampilkan dialog tambah tanaman saat tombol "Tambah Tanaman" diklik
+      $('#tambah-button').click(function() {
+        $('#tambah-dialog').dialog('open');
+      });
+
+      // Inisialisasi dialog tambah tanaman
+      $('#tambah-dialog').dialog({
+        autoOpen: false,
+        width: 400,
+        modal: true
+      });
+
+      // Menampilkan dialog edit tanaman saat tombol "Edit" diklik
+      $(document).on('click', '.edit-button', function() {
+        var tanamanId = $(this).data('id');
+        $.getJSON('http://localhost:3000/tanaman/' + tanamanId, function(data) {
+          var row = $(this).closest('tr');
+          var id = row.find('td:eq(0)').text();
+          var nama = row.find('td:eq(1)').text();
+          var jenis = row.find('td:eq(2)').text();
+
+          $('#edit-id').val(id);
+          $('#edit-nama').val(nama);
+          $('#edit-jenis').val(jenis);
+          $('#edit-dialog').dialog('open');
+        });
+      });
+
+      // Validasi form edit tanaman menggunakan jQuery Form Validation
+      $('#form-edit-tanaman').validate({
+        rules: {
+          editId: {
+            required: true
+          },
+          editNama: {
+            required: true
+          },
+          editJenis: {
+            required: true
+          }
+        },
+        messages: {
+          editId: {
+            required: "ID tanaman harus diisi"
+          },
+          editNama: {
+            required: "Nama tanaman harus diisi"
+          },
+          editJenis: {
+            required: "Jenis tanaman harus diisi"
+          }
+        },
+        submitHandler: function(form) {
+          var id = $('#edit-id').val();
+          var nama = $('#edit-nama').val();
+          var jenis = $('#edit-jenis').val();
+
+          // Mengirim data tanaman yang diubah ke server
+          $.ajax({
+            url: 'http://localhost:3000/tanaman/' + id,
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: id, nama: nama, jenis: jenis }),
+            success: function(data) {
+              // Mengupdate data tanaman di tabel
+              var row = $('#tanaman-table').find('tr[data-id="' + id + '"]');
+              row.find('td:eq(1)').text(nama);
+              row.find('td:eq(2)').text(jenis);
+              $('#edit-dialog').dialog('close');
+            }
+          });
+        }
+      });
+
+      // Inisialisasi dialog edit tanaman
+      $('#edit-dialog').dialog({
+        autoOpen: false,
+        width: 400,
+        modal: true
+      });
+
+      // Menghapus tanaman saat tombol "Delete" diklik
+      $(document).on('click', '.delete-button', function() {
+        var tanamanId = $(this).data('id');
+        if (confirm('Apakah Anda yakin ingin menghapus tanaman ini?')) {
+          $.ajax({
+            url: 'http://localhost:3000/tanaman/' + tanamanId,
+            type: 'DELETE',
+            success: function(data) {
+              // Menghapus data tanaman dari tabel
+              var row = $('#tanaman-table').find('tr[data-id="' + tanamanId + '"]');
+              $('#tanaman-table').DataTable().row(row).remove().draw(false);
+            }
+          });
+        }
+      });
+    });
+  </script>
+  <style>
+    #tanaman-table-container {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Data Tanaman</h1>
+  <button id="tambah-button">Tambah Tanaman</button>
+  <div id="tanaman-table-container"></div>
+
+  <!-- Dialog Tambah Tanaman -->
+  <div id="tambah-dialog" title="Tambah Tanaman">
+    <form id="form-tambah-tanaman">
+      <label for="id">ID:</label>
+      <input type="text" id="id" name="id" required><br>
+      <label for="nama">Nama:</label>
+      <input type="text" id="nama" name="nama" required><br>
+      <label for="jenis">Jenis:</label>
+      <input type="text" id="jenis" name="jenis" required><br>
+      <input type="submit" value="Tambah">
+    </form>
+  </div>
+
+  <!-- Dialog Edit Tanaman -->
+  <div id="edit-dialog" title="Edit Tanaman">
+    <form id="form-edit-tanaman">
+      <label for="edit-id">ID:</label>
+      <input type="text" id="edit-id" name="editId" required><br>
+      <label for="edit-nama">Nama:</label>
+      <input type="text" id="edit-nama" name="editNama" required><br>
+      <label for="edit-jenis">Jenis:</label>
+      <input type="text" id="edit-jenis" name="editJenis" required><br>
+      <input type="submit" value="Simpan">
+    </form>
+  </div>
+</body>
+</html>
